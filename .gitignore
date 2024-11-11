@@ -1,2 +1,18 @@
-.zig-cache/
-zig-out/
+# Generated meta data
+**/.DS_Store
+
+# Ignore Doxygen directory
+evdk_doxygen*
+
+# Ignore directories that are generated
+evdk_workspace_mcuxpresso/**/Debug
+evdk_workspace_mcuxpresso/**/Release
+evdk_workspace_qt/build*
+
+# Ignore user specific settings files
+evdk_workspace_mcuxpresso/**/.settings
+evdk_workspace_mcuxpresso/**/.default_mex
+evdk_workspace_mcuxpresso/**/*.launch
+evdk_workspace_mcuxpresso/**/*.jlink
+evdk_workspace_qt/**/*.pro.user
+
