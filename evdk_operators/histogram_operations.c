@@ -170,7 +170,6 @@ void contrast(const image_t *src, image_t *dst, const float contrast)
 
     // Calculate the average pixel value
     average = sum / (float)(src->rows * src->cols);
-    printf("Average pixel value: %f\n", average);
     // Reset `i` to loop through all pixels again
     i = src->rows * src->cols;
 
