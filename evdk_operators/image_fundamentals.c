@@ -960,16 +960,19 @@ void clearFloatImage(image_t *img)
  */
 void convertUyvyToUint8(image_t *src, image_t *dst)
 {
-    // ********************************************
-    // Remove this block when implementation starts
-    #warning TODO: convertUyvyToUint8
+    uint32_t i = src->rows * src->cols;
+    uint8_pixel_t *uint8_pixel = (uint8_pixel_t *)dst->data;
+    uyvy_pixel_t *uyvy_pixel = (uyvy_pixel_t *)src->data;
 
-    // Added to prevent compiler warnings
-    (void)src;
-    (void)dst;
+    // Loop all pixels and convert
+    while(i-- > 0)
+    {
+        *uint8_pixel = (uint8_pixel_t)(*uyvy_pixel >> 8);
 
-    return;
-    // ********************************************
+        // Next pixel
+        uint8_pixel++;
+        uyvy_pixel++;
+    }
 }
 
 /*!

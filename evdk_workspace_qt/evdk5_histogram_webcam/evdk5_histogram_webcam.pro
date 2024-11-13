@@ -42,7 +42,7 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-opencv_path = c:/opencv-4.8.0
+opencv_path = c:/opencv-4.10.0
 
 INCLUDEPATH += $$PWD/../../evdk_operators
 INCLUDEPATH += $$opencv_path/build/install/include
