@@ -16,3 +16,5 @@ evdk_workspace_mcuxpresso/**/*.launch
 evdk_workspace_mcuxpresso/**/*.jlink
 evdk_workspace_qt/**/*.pro.user
 
+evdk_operators/histogram_operations.c.autosave
+evdk_workspace_mcuxpresso/frdmmcxn947_evdk5_0/.cproject
