@@ -178,13 +178,13 @@ int main(void)
     // Select one example
     // -------------------------------------------------------------------------
 
-    exampleWebcamBgr888();
+//    exampleWebcamBgr888();
 //    exampleWebcamUint8();
 //    exampleWebcamBgr888TestPattern();
 //    exampleWebcamUint8TestPattern();
 //    exampleThreshold();
 //    exampleRotate();
-//    exampleTemplate();
+    exampleTemplate();
 //    exampleFinalAssignment();
 
     // -------------------------------------------------------------------------
@@ -768,7 +768,7 @@ void exampleTemplate(void)
         // Use this as a playground for testing image processing functions. As
         // an example, the following function scales the image for better
         // visualization.
-        scale(src, dst);
+        scaleFast(src, dst);
 
         // Copy timestamp
         ms2 = ms;
