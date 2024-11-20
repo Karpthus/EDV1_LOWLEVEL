@@ -1073,7 +1073,7 @@ void convertUyvyToBgr888(image_t *src, image_t *dst)
         bgr888_pixel->b = clip(y2 + (2.032f * u));
         bgr888_pixel++;
 
-        // Test with alternative coefficients
+// Test with alternative coefficients
 
 #if 0
 
@@ -1089,8 +1089,8 @@ void convertUyvyToBgr888(image_t *src, image_t *dst)
 
 #endif
 
-        // Several alternative calculation methods
-        // \see https://learn.microsoft.com/en-us/windows/win32/medfound/recommended-8-bit-yuv-formats-for-video-rendering
+// Several alternative calculation methods
+// \see https://learn.microsoft.com/en-us/windows/win32/medfound/recommended-8-bit-yuv-formats-for-video-rendering
 
 #if 0
         int32_t C = y1;
@@ -1587,9 +1587,9 @@ void convolve(const image_t *src, image_t *dst, const image_t *msk)
                     for(int32_t i=-dc; i<=dc; i++)
                     {
                         if(((x-i) >= 0) &&
-                           ((y-j) >= 0) &&
-                           ((x-i) <  src->cols) &&
-                           ((y-j) <  src->rows))
+                            ((y-j) >= 0) &&
+                            ((x-i) <  src->cols) &&
+                            ((y-j) <  src->rows))
                         {
                             val += getInt16Pixel(src,x-i,y-j) *
                                    getInt16Pixel(msk,i+dc,j+dr);
@@ -1633,9 +1633,9 @@ void convolve(const image_t *src, image_t *dst, const image_t *msk)
                     for(int32_t i=-dc; i<=dc; i++)
                     {
                         if(((x-i) >= 0) &&
-                           ((y-j) >= 0) &&
-                           ((x-i) <  src->cols) &&
-                           ((y-j) <  src->rows))
+                            ((y-j) >= 0) &&
+                            ((x-i) <  src->cols) &&
+                            ((y-j) <  src->rows))
                         {
                             val += getUint8Pixel(src,x-i,y-j) * getUint8Pixel(msk,i+dc,j+dr);
                         }
@@ -1675,9 +1675,9 @@ void convolve(const image_t *src, image_t *dst, const image_t *msk)
  */
 void convolveFast(const image_t *src, image_t *dst, const image_t *msk)
 {
-    // ********************************************
-    // Remove this block when implementation starts
-    #warning TODO: convolveFast
+// ********************************************
+// Remove this block when implementation starts
+#warning TODO: convolveFast
 
     // Added to prevent compiler warnings
     (void)src;
@@ -1736,9 +1736,9 @@ void correlate(const image_t *src, image_t *dst, const image_t *msk)
                     for(int32_t i=-dc; i<=dc; i++)
                     {
                         if(((x+i) >= 0) &&
-                           ((y+j) >= 0) &&
-                           ((x+i) <  src->cols) &&
-                           ((y+j) <  src->rows))
+                            ((y+j) >= 0) &&
+                            ((x+i) <  src->cols) &&
+                            ((y+j) <  src->rows))
                         {
                             val += getInt16Pixel(src,x+i,y+j) *
                                    getInt16Pixel(msk,i+dc,j+dr);
@@ -1782,9 +1782,9 @@ void correlate(const image_t *src, image_t *dst, const image_t *msk)
                     for(int32_t i=-dc; i<=dc; i++)
                     {
                         if(((x+i) >= 0) &&
-                           ((y+j) >= 0) &&
-                           ((x+i) <  src->cols) &&
-                           ((y+j) <  src->rows))
+                            ((y+j) >= 0) &&
+                            ((x+i) <  src->cols) &&
+                            ((y+j) <  src->rows))
                         {
                             val += getUint8Pixel(src,x+i,y+j) * getUint8Pixel(msk,i+dc,j+dr);
                         }
@@ -2024,7 +2024,7 @@ void scaleFloatToUint8(const image_t *src ,image_t *dst)
 void scaleFast(const image_t *src, image_t *dst)
 {
     uint8_pixel_t min = UINT8_MAX, max = 0;
-    uint32_t imsize_8 = (src->rows * src->cols) / 8;
+    uint32_t imsize_8 = (src->rows * src->cols) / 4;
     uint32_t *s = (uint32_t *)src->data;
 
     // Step 1: Find min and max
@@ -2040,19 +2040,6 @@ void scaleFast(const image_t *src, image_t *dst)
         if((uint8_pixel_t)(four_pixels >> 16) > max){max = (uint8_pixel_t)(four_pixels >> 16);}
         if((uint8_pixel_t)(four_pixels >> 16) < min){min = (uint8_pixel_t)(four_pixels >> 16);}
         //Reading the four pixel
-        if((uint8_pixel_t)(four_pixels >> 24) > max){max = (uint8_pixel_t)(four_pixels >> 24);}
-        if((uint8_pixel_t)(four_pixels >> 24) < min){min = (uint8_pixel_t)(four_pixels >> 24);}
-
-        four_pixels = *s++;
-        if((uint8_pixel_t)(four_pixels >> 0) > max){max = (uint8_pixel_t)(four_pixels >> 0);}
-        if((uint8_pixel_t)(four_pixels >> 0) < min){min = (uint8_pixel_t)(four_pixels >> 0);}
-
-        if((uint8_pixel_t)(four_pixels >> 8) > max){max = (uint8_pixel_t)(four_pixels >> 8);}
-        if((uint8_pixel_t)(four_pixels >> 8) < min){min = (uint8_pixel_t)(four_pixels >> 8);}
-
-        if((uint8_pixel_t)(four_pixels >> 16) > max){max = (uint8_pixel_t)(four_pixels >> 16);}
-        if((uint8_pixel_t)(four_pixels >> 16) < min){min = (uint8_pixel_t)(four_pixels >> 16);}
-
         if((uint8_pixel_t)(four_pixels >> 24) > max){max = (uint8_pixel_t)(four_pixels >> 24);}
         if((uint8_pixel_t)(four_pixels >> 24) < min){min = (uint8_pixel_t)(four_pixels >> 24);}
     }
@@ -2083,14 +2070,6 @@ void scaleFast(const image_t *src, image_t *dst)
         uint8_pixel_t p1 = LUT[(four_pixels >> 8) & 0xFF];
         uint8_pixel_t p2 = LUT[(four_pixels >> 16) & 0xFF];
         uint8_pixel_t p3 = LUT[(four_pixels >> 24) & 0xFF];
-        *dst_data++ = (p0 << 0) | (p1 << 8) | (p2 << 16) | (p3 << 24);
-
-        // Next 4 pixels
-        four_pixels = *s++;
-        p0 = LUT[(four_pixels >> 0) & 0xFF];
-        p1 = LUT[(four_pixels >> 8) & 0xFF];
-        p2 = LUT[(four_pixels >> 16) & 0xFF];
-        p3 = LUT[(four_pixels >> 24) & 0xFF];
         *dst_data++ = (p0 << 0) | (p1 << 8) | (p2 << 16) | (p3 << 24);
     }
 }

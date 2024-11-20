@@ -768,7 +768,10 @@ void exampleTemplate(void)
         // Use this as a playground for testing image processing functions. As
         // an example, the following function scales the image for better
         // visualization.
-        scaleFast(src, dst);
+
+        //scaleFast(src, dst);
+        //clearUint8Image(dst);
+        clearUint8Image_cm33(dst);
 
         // Copy timestamp
         ms2 = ms;
