@@ -66,7 +66,53 @@ clearUint8Image_cm33:
         // r15   : Program Counter
 
 
-		// \todo Implement this function
+		PUSH {r4-r10} // Save regsiters to the stack
 
+		//Loading image data, takes the data in r0 and splits it over r0,r1,r2,r3
+        // r0 = image_t.cols
+        // r1 = image_t.rows
+        // r2 = image_t.type
+        // r3 = image_t.data
+		LDMIA r0, {r0-r3}
 
+		//Save amout of pixels in r1, rows * cols
+		MUL r1, r0, r1
+		MOV r0, r3 // moce picture data from r3 to r0
+
+		//Setting all the registers to 0 so that all the registers are used to clear the image
+		MOV r4, #0x00000000
+		MOV r5 , r4
+		MOV r6 , r4
+		MOV r7 , r4
+		MOV r8 , r4
+		MOV r9 , r4
+		MOV r10 , r4
+
+//Keep in mind that B is checking for branching, what is specified after is what kind of check is made
+//EQ = equals to 0
+//HI = > than 0
+//NE = not equal
+//These are the ones used in the code, check the documentation for more information
+
+// Since using 7 registers we need to keep in mind that 4 x 7 is 28 bytes each loop
+clear_loop:
+		STMIA r0!, {r4-r10}  //Store all multiple values to r0, and update r0
+		SUBS r1, r1, #28	 //Substract 28 of the number of pixels
+		BHI clear_loop		 //Checks if there are more pixels to be cleared
+
+		//Handeling remaining pixels if there are any
+		ADD r1, r1, #28 	 //Restore r1 to positive if it went (negative)
+		CMP r1, #0 			 //Check if rhere are any pixels left
+		BEQ done			 //If no pixels are left skip clear_remainder and clean up the stack
+
+//Clearing the remaining
+clear_remainder:
+		STRB r4, [r0], #1	 //Store a the lowerst byte of r4 that equal 0 in the memory from r0
+							 //And the #1 automaticly updates the r0 register
+		SUBS r1 ,r1, #1		 //Decrement the amount of pixels left to clear
+		BNE clear_remainder  //Keep clearing pixels until r1 == 0
+
+done:
+		//Clean up the stack after finishing the operation
+		POP {r4-r10}
         BX lr
