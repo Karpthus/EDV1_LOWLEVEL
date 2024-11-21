@@ -51,7 +51,22 @@
         .section .text.convertUyvyToUint8_cm33
         .weak convertUyvyToUint8_cm33
         .type convertUyvyToUint8_cm33, %function
+/*void convertUyvyToUint8(image_t *src, image_t *dst)
+{
+    uint32_t i = src->rows * src->cols;
+    uint8_pixel_t *uint8_pixel = (uint8_pixel_t *)dst->data;
+    uyvy_pixel_t *uyvy_pixel = (uyvy_pixel_t *)src->data;
 
+    // Loop all pixels and convert
+    while(i-- > 0)
+    {
+        *uint8_pixel = (uint8_pixel_t)(*uyvy_pixel >> 8);
+
+        // Next pixel
+        uint8_pixel++;
+        uyvy_pixel++;
+    }
+}*/
 convertUyvyToUint8_cm33:
 
         // r0-r3 : function arguments and scratch registers
@@ -65,8 +80,20 @@ convertUyvyToUint8_cm33:
         // r14   : Link Register
         // r15   : Program Counter
 
+        //r6 is reserved for number of pixels
+        //r0 is reserved for data src
+        //r1 is reserved for data dst
 
-		// \todo Implement this function
+		PUSH {r4-r10}		//Sent registers to the stack
+        LDMIA r0, {r2-r5}	//Loading the struct of source
+        MUL r6, r0, r1		//Number of pixels
+        MOV r0, r5			//Move pointer data to r0
+        LDMIA r1, {r2-r5}	//Loading struct data dst
+        MOV r1, r5			//Moce data dst to r1
 
+convert_loop:
+		LDMIA r0!, {r7, r8}
+		BNE convert_loop  	//Jump back to the beginning until all pixels are processed
 
+		POP {r4-R10}  //return registers to their place
         BX lr
