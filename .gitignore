@@ -18,3 +18,8 @@ evdk_workspace_qt/**/*.pro.user
 
 evdk_operators/histogram_operations.c.autosave
 evdk_workspace_mcuxpresso/frdmmcxn947_evdk5_0/.cproject
+evdk_workspace_qt/evdk5_webcam/build/Desktop-Release/.qtc_clangd/.cache/clangd/index/errno.h.3F8ECD84FB880B64.idx
+*.idx
+/evdk_workspace_qt/evdk5_webcam
+/evdk_workspace_qt/evdk5_webcam
+/evdk_workspace_qt/evdk5_unit_test/build

@@ -67,6 +67,8 @@
         uyvy_pixel++;
     }
 }*/
+
+//Intial setup for the instructions
 convertUyvyToUint8_cm33:
 
         // r0-r3 : function arguments and scratch registers
@@ -84,16 +86,49 @@ convertUyvyToUint8_cm33:
         //r0 is reserved for data src
         //r1 is reserved for data dst
 
-		PUSH {r4-r10}		//Sent registers to the stack
-        LDMIA r0, {r2-r5}	//Loading the struct of source
-        MUL r6, r0, r1		//Number of pixels
-        MOV r0, r5			//Move pointer data to r0
-        LDMIA r1, {r2-r5}	//Loading struct data dst
-        MOV r1, r5			//Moce data dst to r1
-
+		PUSH {r4-r10}		    //Sent registers to the stack
+        LDMIA r0, {r2-r5}	    //Loading the struct of source
+        MUL r6, r0, r1		    //Number of pixels
+        MOV r0, r5			    //Move pointer data to r0
+        LDMIA r1, {r2-r5}	    //Loading struct data dst
+        MOV r1, r5			    //Moce data dst to r1
+//main converting loop
+//Loop is made to load 4 pixels into the register to reduce 
+//Used for looping is BLO, this means branch if lower than CMP value
+//
 convert_loop:
-		LDMIA r0!, {r7, r8}
+        CMP r6, #4              //Checking the amount of pixels is >= 4
+        BLO handle_remainder    //If under 4 pixels are remaining jump to single pixel handle_remainder
+
+		LDMIA r0!, {r7, r8}     //Load 2 pixels in r7 and 2 pixels into r8
+
+        LSR r9, r7, #8          // Extract 1st Y (from r7, bits [15:8])
+        STRB r9, [r1], #1       // Store 1st Y to dst, increment r1
+
+        LSR r9, r7, #24         // Extract 2nd Y (from r7, bits [31:24])
+        STRB r9, [r1], #1       // Store 2nd Y to dst, increment r1
+
+        LSR r9, r8, #8          // Extract 3rd Y (from r8, bits [15:8])
+        STRB r9, [r1], #1       // Store 3rd Y to dst, increment r1
+
+        LSR r9, r8, #24         // Extract 4th Y (from r8, bits [31:24])
+        STRB r9, [r1], #1       // Store 4th Y to dst, increment r1
+
+        SUBS r6, r6, #4         // Decrement pixel counter by 4
+
 		BNE convert_loop  	//Jump back to the beginning until all pixels are processed
 
+handle_remainder:
+        CMP r6, #0              // Check if any pixels remain
+        BEQ done                // If none remain, exit
+
+        LDRH r7, [r0], #2       // Load remaining UYVY pixel (2 bytes)
+        LSR r9, r7, #8          // Extract Y (from bits [15:8])
+        STRB r9, [r1], #1       // Store Y to dst
+
+        SUBS r6, r6, #1         // Decrement remaining pixel count
+        BEQ handle_remainder      // Repeat for any remaining pixels
+
+done:
 		POP {r4-R10}  //return registers to their place
         BX lr
