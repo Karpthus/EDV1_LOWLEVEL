@@ -1675,17 +1675,66 @@ void convolve(const image_t *src, image_t *dst, const image_t *msk)
  */
 void convolveFast(const image_t *src, image_t *dst, const image_t *msk)
 {
-// ********************************************
-// Remove this block when implementation starts
-#warning TODO: convolveFast
+    const int32_t dr = msk->rows / 2;
+    const int32_t dc = msk->cols / 2;
 
-    // Added to prevent compiler warnings
-    (void)src;
-    (void)dst;
-    (void)msk;
+    const int32_t src_stride = src->cols;  // Number of elements in a row (source)
+    const int32_t msk_stride = msk->cols;  // Number of elements in a row (mask)
 
-    return;
-    // ********************************************
+    void *src_data = src->data;
+    void *msk_data = msk->data;
+    void *dst_data = dst->data;
+
+    const int32_t max_pixel = (src->type == IMGTYPE_UINT8) ? UINT8_MAX : INT16_MAX;
+    const int32_t min_pixel = (src->type == IMGTYPE_UINT8) ? 0 : INT16_MIN;
+
+    // Process the core region (excluding borders)
+    for (int32_t y = dr; y < src->rows - dr; y++) {
+        for (int32_t x = dc; x < src->cols - dc; x++) {
+            int32_t val = 0;
+
+            // Pointer to the top-left pixel of the kernel region in the source
+            if (src->type == IMGTYPE_UINT8) {
+                uint8_t *src_ptr = (uint8_t *)src_data + (y - dr) * src_stride + (x - dc);
+                uint8_t *msk_ptr = (uint8_t *)msk_data;
+
+                // Apply the kernel
+                for (int32_t j = 0; j < msk->rows; j++) {
+                    uint8_t *src_row = src_ptr + j * src_stride;
+                    uint8_t *msk_row = msk_ptr + j * msk_stride;
+
+                    for (int32_t i = 0; i < msk->cols; i++) {
+                        val += src_row[i] * msk_row[i];
+                    }
+                }
+
+                // Clip the result
+                val = (val > max_pixel) ? max_pixel : (val < min_pixel ? min_pixel : val);
+
+                // Store the result
+                ((uint8_t *)dst_data)[y * src_stride + x] = (uint8_t)val;
+            } else if (src->type == IMGTYPE_INT16) {
+                int16_t *src_ptr = (int16_t *)src_data + (y - dr) * src_stride + (x - dc);
+                int16_t *msk_ptr = (int16_t *)msk_data;
+
+                // Apply the kernel
+                for (int32_t j = 0; j < msk->rows; j++) {
+                    int16_t *src_row = src_ptr + j * src_stride;
+                    int16_t *msk_row = msk_ptr + j * msk_stride;
+
+                    for (int32_t i = 0; i < msk->cols; i++) {
+                        val += src_row[i] * msk_row[i];
+                    }
+                }
+
+                // Clip the result
+                val = (val > max_pixel) ? max_pixel : (val < min_pixel ? min_pixel : val);
+
+                // Store the result
+                ((int16_t *)dst_data)[y * src_stride + x] = (int16_t)val;
+            }
+        }
+    }
 }
 
 /*!
