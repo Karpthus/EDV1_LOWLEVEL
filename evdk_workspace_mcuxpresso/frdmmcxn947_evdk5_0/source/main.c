@@ -417,7 +417,7 @@ void exampleWebcamUint8(void)
         // ---------------------------------------------------------------------
         // Convert uyvy_pixel_t camera image to uint8_pixel_t image
         convertUyvyToUint8(cam, src);
-
+        //convertUyvyToUint8_cm33(cam,src);
         // Examples, select one!
         copyUint8Image(src, dst);
 //        scale(src, dst);
@@ -737,6 +737,14 @@ void exampleTemplate(void)
     // -------------------------------------------------------------------------
     image_t *src = newUint8Image(EVDK5_WIDTH, EVDK5_HEIGHT);
     image_t *dst = newUint8Image(EVDK5_WIDTH, EVDK5_HEIGHT);
+    image_t *mask = newUint8Image(3,3);
+    int16_t maskData[3*3] = {
+            		0,  -1,  0,
+    				-1,  5, -1,
+    				0,  -1,  0
+            		};
+
+    mask->data = (uint8_t *)maskData;
 
     if(dst == NULL)
     {
@@ -759,25 +767,32 @@ void exampleTemplate(void)
         // Image processing pipeline
         // ---------------------------------------------------------------------
         // Convert uyvy_pixel_t camera image to uint8_pixel_t image
-        convertToUint8(cam, src);
+         //convertToUint8(cam, src);
+        convertUyvyToUint8_cm33(cam,src);
+
 
         // Copy timestamp
         ms1 = ms;
+        //copyUint8Image(src, dst);
 
         // \todo
         // Use this as a playground for testing image processing functions. As
         // an example, the following function scales the image for better
         // visualization.
-
+        //convertUyvyToUint8_cm33(cam,dst);
         //scaleFast(src, dst);
         //clearUint8Image(dst);
-        clearUint8Image_cm33(dst);
-
-        // Copy timestamp
+        //clearUint8Image_cm33(dst);
+        //convertuyvytouint8_cm33(src,dst);
+        convolveFast(src, dst, mask);
         ms2 = ms;
+        // Copy timestamp
+
 
         // Convert uint8_pixel_t image to bgr888_pixel_t image for USB
         convertToBgr888(dst, usb);
+        free(mask->data);
+        free(mask);
 
         // ---------------------------------------------------------------------
         // Set flag for USB interface that a new frame is available
