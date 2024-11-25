@@ -1683,7 +1683,7 @@ void convolveFast(const image_t *src, image_t *dst, const image_t *msk)
     if (src->type == IMGTYPE_UINT8) {
         uint8_t *srcData = (uint8_t*)src->data;
         uint8_t *dstData = (uint8_t*)dst->data;
-        int16_t *mskData = (int16_t*)msk->data;
+        int8_t *mskData = (int8_t*)msk->data;
 
         // Iterate over the entire image
         for (int32_t y = dr; y < src->rows - dr; ++y) {
