@@ -364,14 +364,69 @@ void sobel(const image_t *src, image_t *mag, image_t *dir)
  */
 void sobelFast(const image_t *src, image_t *mag)
 {
-    // ********************************************
-    // Remove this block when implementation starts
-    #warning TODO: sobelFast
+    int16_pixel_t gh_msk_data[3 * 3] =
+        {
+            -1, -2, -1,
+            0,  0,  0,
+            1,  2,  1,
+        };
+    int16_pixel_t gv_msk_data[3 * 3] =
+        {
+            -1,  0,  1,
+            -2,  0,  2,
+            -1,  0,  1,
+        };
 
-    // Added to prevent compiler warnings
-    (void)src;
-    (void)mag;
+    image_t msk = {
+        .cols = 3,
+        .rows = 3,
+        .type = IMGTYPE_INT16,
+        .data = NULL,
+    };
 
-    return;
-    // ********************************************
+    image_t *gh = newInt16Image(src->cols, src->rows);
+    if (gh == NULL)
+    {
+        // No memory allocated
+        return;
+    }
+
+    image_t *gv = newInt16Image(src->cols, src->rows);
+    if (gv == NULL)
+    {
+        // No memory allocated
+        deleteInt16Image(gh);
+        return;
+    }
+
+    clearInt16Image(gh);
+    clearInt16Image(gv);
+
+    // Calculate Gh by correlating the mask
+    msk.data = (uint8_t *)gh_msk_data;
+    convolveFast(src, gh, &msk);
+
+    // Calculate Gv by correlating the mask
+    msk.data = (uint8_t *)gv_msk_data;
+    convolveFast(src, gv, &msk);
+
+    // Direct pointer access
+    int16_pixel_t *gh_data = (int16_pixel_t *)gh->data;
+    int16_pixel_t *gv_data = (int16_pixel_t *)gv->data;
+    int16_pixel_t *mag_data = (int16_pixel_t *)mag->data;
+
+    // Loop through all pixels
+    int32_t total_pixels = src->rows * src->cols;
+    for (int32_t i = 0; i < total_pixels; i++)
+    {
+        // Msobel = |Gh| + |Gv|
+        *mag_data++ = abs(*gh_data++) + abs(*gv_data++);
+
+
+    }
+
+    // Cleanup temporary images
+    deleteInt16Image(gh);
+    deleteInt16Image(gv);
 }
+

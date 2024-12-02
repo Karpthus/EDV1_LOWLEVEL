@@ -247,16 +247,35 @@ void mean(const image_t *src, image_t *dst, const uint8_t n)
  */
 void meanFast(const image_t *src, image_t *dst)
 {
-    // ********************************************
-    // Remove this block when implementation starts
-    #warning TODO: meanFast
+   // Pointers to the image data for faster access
+    uint8_t *srcData = src->data;
+    uint8_t *dstData = dst->data;
+    int32_t width = src->cols;
+    int32_t height = src->rows;
 
-    // Added to prevent compiler warnings
-    (void)src;
-    (void)dst;
+    // Loop over each pixel in the image (ignoring the borders)
+    for (int32_t y = 1; y < height - 1; y++)  // Start at 1 and end at height-2 to avoid borders
+    {
+        for (int32_t x = 1; x < width - 1; x++)  // Start at 1 and end at width-2 to avoid borders
+        {
+            // Calculate the sum of the 3x3 window
+            uint32_t sum = 0;
 
-    return;
-    // ********************************************
+            // Iterate over the 3x3 window centered at (x, y)
+            sum += *(srcData + (y - 1) * width + (x - 1));  // Top-left
+            sum += *(srcData + (y - 1) * width + x);        // Top-center
+            sum += *(srcData + (y - 1) * width + (x + 1));  // Top-right
+            sum += *(srcData + y * width + (x - 1));        // Mid-left
+            sum += *(srcData + y * width + x);              // Mid-center
+            sum += *(srcData + y * width + (x + 1));        // Mid-right
+            sum += *(srcData + (y + 1) * width + (x - 1));  // Bottom-left
+            sum += *(srcData + (y + 1) * width + x);        // Bottom-center
+            sum += *(srcData + (y + 1) * width + (x + 1));  // Bottom-right
+
+            // Compute the mean and store it in the destination image
+            *(dstData + y * width + x) = (uint8_t)((sum + 4) / 9);  // Add 4 for rounding
+        }
+    }
 }
 
 /*!

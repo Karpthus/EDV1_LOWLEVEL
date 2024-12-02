@@ -72,20 +72,15 @@ void threshold(const image_t *src, image_t *dst,
     ASSERT(src->cols != dst->cols, "src and dst have different number of columns");
     ASSERT(src->rows != dst->rows, "src and dst have different number of rows");
 
-    // Loop all pixels
-    for(int32_t y=0; y<src->rows; y++)
-    {
-        for(int32_t x=0; x<src->cols; x++)
-        {
-            // Get the pixel from the original image and modify brightness
-            uint8_pixel_t p = getUint8Pixel(src, x, y);
+    uint32_t i = src->rows * src->cols;
+    uint8_pixel_t *s = (uint8_pixel_t *)src->data;
+    uint8_pixel_t *d = (uint8_pixel_t *)dst->data;
 
-            // Verify if the value is within the thresholding window
-            if((p >= min) && (p <= max))
-                setUint8Pixel(dst, x, y, 1);
-            else
-                setUint8Pixel(dst, x, y, 0);
-        }
+    // Loop all pixels and set to 1 if the pixel is within thresholding window
+    while(i-- > 0)
+    {
+        uint8_pixel_t pixel = *s++;
+        *d++ = ((pixel >= min) && (pixel <= max)) ? 1 : 0;
     }
 }
 
@@ -186,18 +181,61 @@ void thresholdOptimum(const image_t *src, image_t *dst, const eBrightness b)
  */
 void threshold2Means(const image_t *src, image_t *dst, const eBrightness b)
 {
-    // ********************************************
-    // Remove this block when implementation starts
-    #warning TODO: threshold2Means
+    // Create histogram
+    uint32_t hist[256];
+    histogram(src, hist);
 
-    // Added to prevent compiler warnings
+    //Threshold intialzing
+    uint32_t low = 0;
+    uint32_t high = 0;
 
-    (void)src;
-    (void)dst;
-    (void)b;
+    for(int i = 0; i < 256; i++){
+        if(hist[i] > 0){
+            low = i;
+            break;
+        }
+    }
 
-    return;
-    // ********************************************
+    for(int i = 255; i >= 0; i--){
+        if(hist[i] > 0){
+            high = i;
+            break;
+        }
+    }
+
+    uint32_t old = (low+high)/2;
+    uint32_t new = 0;
+
+    while(1){
+        uint32_t sum_left = 0, count_left = 0;
+        uint32_t sum_right = 0, count_right = 0;
+
+        for(uint32_t i = 0; i < 256; i++){
+            if(i <= old){
+                sum_left += i * hist[i];
+                count_left += hist[i];
+            }
+            else{
+                sum_right += i * hist[i];
+                count_right += hist[i];
+            }
+
+        }
+        uint32_t mean_left = (float)sum_left / count_left + 0.5f;
+        uint32_t mean_right = (float)sum_right / count_right + 0.5f;
+        new = (mean_right+mean_left)/2;
+        if(old == new){
+            break;
+        }
+        old = new;
+    }
+    // Threshold the image
+    if(b == BRIGHTNESS_DARK)
+        threshold(src, dst, 0, new);
+    else
+        threshold(src, dst, new, 255);
+
+
 }
 
 /*!
@@ -218,17 +256,52 @@ void threshold2Means(const image_t *src, image_t *dst, const eBrightness b)
  */
 void thresholdOtsu(const image_t *src, image_t *dst, const eBrightness b)
 {
-    // ********************************************
-    // Remove this block when implementation starts
-    #warning TODO: thresholdOtsu
+    const uint32_t width = (src->cols)*(src->rows);
 
-    // Added to prevent compiler warnings
-    (void)src;
-    (void)dst;
-    (void)b;
+    // Create histogram
+    uint32_t hist[256];
+    histogram(src, hist);
 
-    return;
-    // ********************************************
+    // Total sum of pixel values and total weight
+    uint32_t total_sum = 0, total_n = 0;
+    for (int i = 0; i < 256; i++) {
+        total_sum += i * hist[i];
+        total_n += hist[i];
+    }
+    uint32_t sum_left = 0; //sum of the left side of the threshold
+    uint32_t n_left = 0; //n of the leftside
+
+    float BCV = 0.0f;
+    int32_t optiThreshold = 0;
+
+    for (uint32_t t = 0; t < 256; t++) {
+        n_left += hist[t];
+        if (n_left == 0) continue; // Avoid division by zero
+        uint32_t n_right = total_n - n_left;
+        if(n_right == 0) continue;
+
+        sum_left += t * hist[t];
+        uint32_t sum_right = total_sum - sum_left;
+
+        float mean_left = (float)sum_left / n_left;
+        float mean_right = (float)sum_right / n_right;
+
+        float newBCV = (float)n_right * n_left * (mean_left - mean_right) * (mean_left - mean_right);
+
+        if (newBCV > BCV){
+            BCV = newBCV;
+            optiThreshold = t; //saving the treshold value
+        }
+
+    }
+
+    // Threshold the image
+    if(b == BRIGHTNESS_DARK)
+        threshold(src, dst, 0, optiThreshold);
+    else
+        threshold(src, dst, optiThreshold, 255);
+
+
 }
 
 /*!

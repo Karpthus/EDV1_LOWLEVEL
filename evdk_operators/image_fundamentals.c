@@ -1675,75 +1675,39 @@ void convolve(const image_t *src, image_t *dst, const image_t *msk)
  */
 void convolveFast(const image_t *src, image_t *dst, const image_t *msk)
 {
-    int32_t dc = msk->cols / 2;  // Assuming the kernel is centered
-    int32_t dr = msk->rows / 2;  // Assuming the kernel is centered
-    int32_t mskCols = msk->cols;
+    const int32_t srcCols = src->cols;
+    const int32_t srcRows = src->rows;
 
-    // Assuming image_t contains an integer type for the image type
-    // and also pointers to data arrays (uint8_t* or int16_t*)
-    if (src->type == IMGTYPE_UINT8) {
-        uint8_t *srcData = (uint8_t*)src->data;
-        uint8_t *dstData = (uint8_t*)dst->data;
-        int16_t *mskData = (int16_t*)msk->data;
+    int16_t *srcData = (int16_t*)src->data;
+    int16_t *dstData = (int16_t*)dst->data;
+    int16_t *mskData = (int16_t*)msk->data;
 
-        // Iterate over the entire image
-        for (int32_t y = dr; y < src->rows - dr; ++y) {
-            for (int32_t x = dc; x < src->cols - dc; ++x) {
-                int32_t val = 0;
 
-                // Unroll the 3x3 kernel
-                val += *(srcData + (y - 1) * src->cols + (x - 1)) * *(mskData + 0 * mskCols + 0);
-                val += *(srcData + (y - 1) * src->cols + (x)) * *(mskData + 1 * mskCols + 0);
-                val += *(srcData + (y - 1) * src->cols + (x + 1)) * *(mskData + 2 * mskCols + 0);
+    // Iterate over the entire image
+    // By beginning at dr and dc its starts at 1 and not 0 and
+    //and -1 on the maximum will skip the border pixels
+    for (int32_t y = 1; y < srcRows - 1; ++y) {
+        for (int32_t x = 1; x < srcCols - 1; ++x) {
+            int32_t val = 0;
 
-                val += *(srcData + (y) * src->cols + (x - 1)) * *(mskData + 0 * mskCols + 1);
-                val += *(srcData + (y) * src->cols + (x)) * *(mskData + 1 * mskCols + 1);
-                val += *(srcData + (y) * src->cols + (x + 1)) * *(mskData + 2 * mskCols + 1);
+            // Unroll the 3x3 kernel
+            val += *(srcData + (y - 1) * srcCols + (x - 1)) * (mskData[0]);
+            val += *(srcData + (y - 1) * srcCols + (x)) * (mskData[3]);
+            val += *(srcData + (y - 1) * srcCols + (x + 1)) * (mskData[6]);
 
-                val += *(srcData + (y + 1) * src->cols + (x - 1)) * *(mskData + 0 * mskCols + 2);
-                val += *(srcData + (y + 1) * src->cols + (x)) * *(mskData + 1 * mskCols + 2);
-                val += *(srcData + (y + 1) * src->cols + (x + 1)) * *(mskData + 2 * mskCols + 2);
+            val += *(srcData + (y) * srcCols + (x - 1)) * (mskData[1]);
+            val += *(srcData + (y) * srcCols + (x)) * (mskData[4]);
+            val += *(srcData + (y) * srcCols + (x + 1)) * (mskData[7]);
 
-                // Manually clamp to [0, 255] range for uint8_t
-                if (val < UINT8_PIXEL_MIN) {
-                    val = 0;
-                } else if (val > UINT8_PIXEL_MAX) {
-                    val = 255;
-                }
+            val += *(srcData + (y + 1) * srcCols + (x - 1)) * (mskData[2]);
+            val += *(srcData + (y + 1) * srcCols + (x)) * (mskData[5]);
+            val += *(srcData + (y + 1) * srcCols + (x + 1)) * (mskData[8]);
 
-                // Store the result in the destination image
-                *(dstData + y * dst->cols + x) = (uint8_t)val;
-            }
+            // Store the result in the destination image
+            *(dstData + (y * dst->cols) + x) = (int16_t)val;
         }
     }
-    else if (src->type == IMGTYPE_INT16) {
-        int16_t *srcData = (int16_t*)src->data;
-        int16_t *dstData = (int16_t*)dst->data;
-        int16_t *mskData = (int16_t*)msk->data;
 
-        // Iterate over the entire image
-        for (int32_t y = dr; y < src->rows - dr; ++y) {
-            for (int32_t x = dc; x < src->cols - dc; ++x) {
-                int32_t val = 0;
-
-                // Unroll the 3x3 kernel
-                val += *(srcData + (y - 1) * src->cols + (x - 1)) * *(mskData + 0 * mskCols + 0);
-                val += *(srcData + (y - 1) * src->cols + (x)) * *(mskData + 1 * mskCols + 0);
-                val += *(srcData + (y - 1) * src->cols + (x + 1)) * *(mskData + 2 * mskCols + 0);
-
-                val += *(srcData + (y) * src->cols + (x - 1)) * *(mskData + 0 * mskCols + 1);
-                val += *(srcData + (y) * src->cols + (x)) * *(mskData + 1 * mskCols + 1);
-                val += *(srcData + (y) * src->cols + (x + 1)) * *(mskData + 2 * mskCols + 1);
-
-                val += *(srcData + (y + 1) * src->cols + (x - 1)) * *(mskData + 0 * mskCols + 2);
-                val += *(srcData + (y + 1) * src->cols + (x)) * *(mskData + 1 * mskCols + 2);
-                val += *(srcData + (y + 1) * src->cols + (x + 1)) * *(mskData + 2 * mskCols + 2);
-
-                // Store the result in the destination image
-                *(dstData + y * dst->cols + x) = (int16_t)val;
-            }
-        }
-    }
 }
 
 /*!

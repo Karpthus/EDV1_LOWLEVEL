@@ -593,7 +593,7 @@ void test_convolveFast(void)
         char name[80] = "";
         sprintf(name, "Test case %d of %d", i+1, (uint32_t)(sizeof(testcases) / sizeof(testcase_t)));
 
-#if 1
+#if 0
         // Print testcase info
         printf("\n---------------------------------------\n");
         printf("%s\n", name);

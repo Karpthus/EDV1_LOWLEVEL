@@ -735,14 +735,26 @@ void exampleTemplate(void)
     // -------------------------------------------------------------------------
     // Local image memory allocation
     // -------------------------------------------------------------------------
+    //image_t *src = newInt16Image(EVDK5_WIDTH, EVDK5_HEIGHT);
     image_t *src = newUint8Image(EVDK5_WIDTH, EVDK5_HEIGHT);
     image_t *dst = newUint8Image(EVDK5_WIDTH, EVDK5_HEIGHT);
-    image_t *mask = newUint8Image(3,3);
+    clearUint8Image_cm33(dst);
+    //clearUint8Image(dst);
+
+    image_t *tmp = newInt16Image(EVDK5_WIDTH, EVDK5_HEIGHT);
+    clearInt16Image(tmp);
+    //image_t *mask = newEmptyUint8Image(3,3);
+    image_t *mask = newEmptyInt16Image(3,3);
+//    int16_t maskData[3*3] = {
+//            		-1,  -1,  -1,
+//    				-1,  8, -1,
+//    				-1,  -1,  -1
+//            		};
     int16_t maskData[3*3] = {
-            		0,  -1,  0,
-    				-1,  5, -1,
-    				0,  -1,  0
-            		};
+                		-3,  -3,  -3,
+        				0,  0, 0,
+        				3,  3,  3
+                		};
 
     mask->data = (uint8_t *)maskData;
 
@@ -767,32 +779,36 @@ void exampleTemplate(void)
         // Image processing pipeline
         // ---------------------------------------------------------------------
         // Convert uyvy_pixel_t camera image to uint8_pixel_t image
-         //convertToUint8(cam, src);
+        //convertToUint8(cam, src);
         convertUyvyToUint8_cm33(cam,src);
+        //convertUyvyToInt16(cam,src);
 
 
         // Copy timestamp
         ms1 = ms;
         //copyUint8Image(src, dst);
 
-        // \todo
-        // Use this as a playground for testing image processing functions. As
-        // an example, the following function scales the image for better
-        // visualization.
         //convertUyvyToUint8_cm33(cam,dst);
-        //scaleFast(src, dst);
+        threshold2Means(src, dst, 10);
+        scaleFast(dst, dst);
+
         //clearUint8Image(dst);
         //clearUint8Image_cm33(dst);
         //convertuyvytouint8_cm33(src,dst);
-        convolveFast(src, dst, mask);
+
+        //convolveFast(src, tmp, mask);
+
+        //sobelFast(src, tmp);
+        //meanFast(src, dst);
+
         ms2 = ms;
         // Copy timestamp
 
 
         // Convert uint8_pixel_t image to bgr888_pixel_t image for USB
+        //scaleInt16ToUint8(tmp, dst);
         convertToBgr888(dst, usb);
-        free(mask->data);
-        free(mask);
+
 
         // ---------------------------------------------------------------------
         // Set flag for USB interface that a new frame is available
