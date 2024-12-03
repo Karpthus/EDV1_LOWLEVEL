@@ -256,8 +256,6 @@ void threshold2Means(const image_t *src, image_t *dst, const eBrightness b)
  */
 void thresholdOtsu(const image_t *src, image_t *dst, const eBrightness b)
 {
-    const uint32_t width = (src->cols)*(src->rows);
-
     // Create histogram
     uint32_t hist[256];
     histogram(src, hist);
@@ -286,7 +284,7 @@ void thresholdOtsu(const image_t *src, image_t *dst, const eBrightness b)
         float mean_left = (float)sum_left / n_left;
         float mean_right = (float)sum_right / n_right;
 
-        float newBCV = (float)n_right * n_left * (mean_left - mean_right) * (mean_left - mean_right);
+        float newBCV = (float)n_right * n_left * ((mean_left - mean_right) * (mean_left - mean_right));
 
         if (newBCV > BCV){
             BCV = newBCV;

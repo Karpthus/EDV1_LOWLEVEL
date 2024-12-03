@@ -735,7 +735,7 @@ void exampleTemplate(void)
     // -------------------------------------------------------------------------
     // Local image memory allocation
     // -------------------------------------------------------------------------
-    //image_t *src = newInt16Image(EVDK5_WIDTH, EVDK5_HEIGHT);
+//    image_t *src = newInt16Image(EVDK5_WIDTH, EVDK5_HEIGHT);
     image_t *src = newUint8Image(EVDK5_WIDTH, EVDK5_HEIGHT);
     image_t *dst = newUint8Image(EVDK5_WIDTH, EVDK5_HEIGHT);
     clearUint8Image_cm33(dst);
@@ -779,34 +779,33 @@ void exampleTemplate(void)
         // Image processing pipeline
         // ---------------------------------------------------------------------
         // Convert uyvy_pixel_t camera image to uint8_pixel_t image
-        //convertToUint8(cam, src);
+//        convertToUint8(cam, src);
         convertUyvyToUint8_cm33(cam,src);
-        //convertUyvyToInt16(cam,src);
+//        convertUyvyToInt16(cam,src);
 
 
         // Copy timestamp
         ms1 = ms;
         //copyUint8Image(src, dst);
-
-        //convertUyvyToUint8_cm33(cam,dst);
-        threshold2Means(src, dst, 10);
+//        threshold2Means(src, dst, 10);
+        thresholdOtsu(src, dst, 10);
         scaleFast(dst, dst);
 
         //clearUint8Image(dst);
         //clearUint8Image_cm33(dst);
         //convertuyvytouint8_cm33(src,dst);
 
-        //convolveFast(src, tmp, mask);
+//        convolveFast(src, tmp, mask); //8 ms, realse is 5.2 ms
+//        meanFast(src, dst); //7 ms, release is 3.3ms
 
         //sobelFast(src, tmp);
-        //meanFast(src, dst);
 
         ms2 = ms;
         // Copy timestamp
 
 
         // Convert uint8_pixel_t image to bgr888_pixel_t image for USB
-        //scaleInt16ToUint8(tmp, dst);
+//        scaleInt16ToUint8(tmp, dst);
         convertToBgr888(dst, usb);
 
 

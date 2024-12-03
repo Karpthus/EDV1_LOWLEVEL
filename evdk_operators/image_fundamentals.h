@@ -150,6 +150,8 @@ void convolve(const image_t *src, image_t *dst, const image_t *msk);
 void convolveFast(const image_t *src, image_t *dst, const image_t *msk);
 void correlate(const image_t *src, image_t *dst, const image_t *msk);
 
+extern void scaleFast_cm33(image_t *src, image_t *dst);
+
 #endif // _IMAGE_FUNDAMENTALS_H_
 
 #ifdef __cplusplus
