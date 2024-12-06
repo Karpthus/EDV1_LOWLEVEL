@@ -66,7 +66,7 @@ clearUint8Image_cm33:
         // r15   : Program Counter
 
 
-		PUSH {r4-r10} // Save regsiters to the stack
+		PUSH {r4-r11} // Save regsiters to the stack
 
 		//Loading image data, takes the data in r0 and splits it over r0,r1,r2,r3
         // r0 = image_t.cols
@@ -87,6 +87,7 @@ clearUint8Image_cm33:
 		MOV r8 , r4
 		MOV r9 , r4
 		MOV r10 , r4
+		MOV r11 , r4
 
 //Keep in mind that B is checking for branching, what is specified after is what kind of check is made
 //EQ = equals to 0
@@ -96,8 +97,8 @@ clearUint8Image_cm33:
 
 // Since using 7 registers we need to keep in mind that 4 x 7 is 28 bytes each loop
 clear_loop:
-		STMIA r0!, {r4-r10}  //Store all multiple values to r0, and update r0
-		SUBS r1, r1, #28	 //Substract 28 of the number of pixels
+		STMIA r0!, {r4-r11}  //Store all multiple values to r0, and update r0
+		SUBS r1, r1, #32	 //Substract 28 of the number of pixels
 		BHI clear_loop		 //Checks if there are more pixels to be cleared
 
 		//Handeling remaining pixels if there are any
@@ -114,5 +115,5 @@ clear_remainder:
 
 done:
 		//Clean up the stack after finishing the operation
-		POP {r4-r10}
+		POP {r4-r11}
         BX lr

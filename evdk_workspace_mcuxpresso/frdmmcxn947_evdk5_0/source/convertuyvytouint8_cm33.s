@@ -86,7 +86,7 @@ convertUyvyToUint8_cm33:
         //r0 is reserved for data src
         //r1 is reserved for data dst
 
-		PUSH {r4-r10}		    //Sent registers to the stack
+		PUSH {r4-r11}		    //Sent registers to the stack
         LDMIA r0, {r2-r5}	    //Loading the struct of source
         MOV r0, r5			    //Move pointer data to r0
 		LDMIA r1!, {r2-r5}      // r4 now contains the address of dst->data
@@ -126,5 +126,5 @@ convert_loop:
     BNE convert_loop     // Repeat if more pixels remain
 
 done:
-    POP {r4-r10}         // Restore callee-saved registers
+    POP {r4-r11}         // Restore callee-saved registers
     BX lr                // Return to caller                  // Return to caller

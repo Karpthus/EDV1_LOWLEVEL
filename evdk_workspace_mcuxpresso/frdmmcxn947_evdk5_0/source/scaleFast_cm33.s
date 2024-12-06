@@ -21,34 +21,7 @@
         if((uint8_pixel_t)(four_pixels >> 24) < min){min = (uint8_pixel_t)(four_pixels >> 24);}
     }
 
-    // Step 2: Precompute LUT
-    uint8_pixel_t LUT[256];
-    if (max == min) {
-        // If all pixels are the same, map everything to a neutral value (e.g., 128)
-        for (int i = 0; i < 256; ++i) {
-            LUT[i] = 128;
-        }
-    } else {
-        //Using the standard formula to compute the scale factor for the image
-        float scaleFactor = 255.0f / (max - min);
-        for (int i = 0; i < 256; ++i) {
-            LUT[i] = (uint8_pixel_t)((i - min) * scaleFactor + 0.5f);
-        }
-    }
 
-    // Step 3: Scale and write pixels using LUT
-    uint32_t *dst_data = (uint32_t *)dst->data;
-    s = (uint32_t *)src->data; // Reset source pointer
-
-    for (uint32_t i = 0; i < imsize_8; ++i) {
-        // First 4 pixels
-        uint32_t four_pixels = *s++;
-        uint8_pixel_t p0 = LUT[(four_pixels >> 0) & 0xFF];
-        uint8_pixel_t p1 = LUT[(four_pixels >> 8) & 0xFF];
-        uint8_pixel_t p2 = LUT[(four_pixels >> 16) & 0xFF];
-        uint8_pixel_t p3 = LUT[(four_pixels >> 24) & 0xFF];
-        *dst_data++ = (p0 << 0) | (p1 << 8) | (p2 << 16) | (p3 << 24);
-    }
 }*/
 
         .syntax unified
@@ -76,13 +49,119 @@ scaleFast_cm33:
         // r0 Src pointer
         // r1 Dst pointer
         // r2 number of pixels
-
         // r3 Scale factor
+
+        // r4 reserved for max
+        // r5 reserved for min
+
         PUSH {r4-r11}		    //Sent registers to the stack
         LDMIA r0, {r2-r5}	    //Loading the struct of source
         MOV r0, r5			    //Move pointer data to r0
 		LDMIA r1!, {r2-r5}      // r4 now contains the address of dst->data
 		MUL r2, r2, r3		    //Number of pixels
-		MOV r1, r5           // r1 becomes the working pointer for the destination
+		MOV r11, r2
+		PUSH {r11}
+		MOV r1, r5              // r1 becomes the working pointer for the destination
+
+		MOV r4, #0
+		MOV r5, #255
+
+loop_min_max:
+		CMP r2, #0
+		BEQ scaleFactor
+
+		LDMIA r0!, {r6}
+
+		//0xFF = 00000000 00000000 00000000 11111111
+		AND r10, r6, #0xFF  // Loading the first pixel with 0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		LSR r6, r6, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r6, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		LSR r6, r6, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r6, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		LSR r6, r6, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r6, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+
+		SUBS r2, r2, #4    // Decrement pixel counter by 4
+    	B loop_min_max    // Repeat if more pixels remain
+
+scaleFactor:
+		MOV r6, #255
+		SUBS r3, r4, r5
+		LSLS r3, r3, #16
+		UDIV r3, r6, r3
+
+		POP {r11}
+		SUBS r0, r0, r11
+		MOV r2 , r11
+
+		B applyScale
+
+applyScale:
+		LDMIA r0!, {r6}
+
+		AND r10, r6, #0xFF
+		SUBS r10, r10, r5
+		MUL r8, r10 , r3
+		LSRS r7, r7, #16
+		BFI r7, r10, #0, #8
+
+		LSR r6, r6, #8
+		AND r10, r6, #0xFF
+		SUBS r10, r10, r5
+		MUL r10, r10 , r3
+		BFI r7, r10, #8, #8
+
+		LSR r6, r6, #8
+		AND r10, r6, #0xFF
+		SUBS r10, r10, r5
+		MUL r10, r10 , r3
+		BFI r7, r10, #16, #8
+
+		LSR r6, r6, #8
+		AND r10, r6, #0xFF
+		SUBS r10, r10, r5
+		MUL r10, r10 , r3
+		BFI r7, r10, #24, #8
+
+		STMIA r1!, {r7}
+
+		SUBS r2, r2, #4
+		CMP r2, #0
+		BNE applyScale
+
+done:
+    	POP {r4-r11}         // Restore callee-saved registers
+    	BX lr
+
+
+
 
 
