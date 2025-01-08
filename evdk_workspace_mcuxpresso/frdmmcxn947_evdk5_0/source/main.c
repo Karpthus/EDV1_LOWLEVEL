@@ -184,8 +184,8 @@ int main(void)
 //    exampleWebcamUint8TestPattern();
 //    exampleThreshold();
 //    exampleRotate();
-    exampleTemplate();
-//    exampleFinalAssignment();
+//    exampleTemplate();
+    exampleFinalAssignment();
 
     // -------------------------------------------------------------------------
     // Should never reach this
@@ -725,39 +725,7 @@ void exampleRotate(void)
     }
 }
 
-int16_t* generateKernel() {
-    int totalSize = EVDK5_WIDTH * EVDK5_HEIGHT;
-    int16_t* maskData = (int16_t*)malloc(totalSize * sizeof(int16_t));
-    if (maskData == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
-        return NULL;
-    }
 
-    int16_t minValue = 20;
-    int16_t maxValue = 200;
-
-    // Place the min and max values
-    maskData[0] = minValue;
-    maskData[totalSize - 1] = maxValue;
-
-    // Fill the array with values between minValue + 1 and maxValue - 1
-    int currentValue = 21;
-    for (int i = 1; i < totalSize - 1; ++i) {
-        maskData[i] = currentValue;
-        currentValue++;
-        if (currentValue >= maxValue) currentValue = 21; // Loop between 21 and 199
-    }
-
-    // Shuffle the intermediate values
-    for (int i = 1; i < totalSize - 1; ++i) {
-        int j = 1 + rand() % (totalSize - 2); // Random index, avoiding first and last
-        int16_t temp = maskData[i];
-        maskData[i] = maskData[j];
-        maskData[j] = temp;
-    }
-
-    return maskData;
-}
 
 void exampleTemplate(void)
 {
@@ -772,7 +740,6 @@ void exampleTemplate(void)
 //    image_t *src = newInt16Image(EVDK5_WIDTH, EVDK5_HEIGHT);
     image_t *src = newUint8Image(EVDK5_WIDTH, EVDK5_HEIGHT);
     image_t *dst = newUint8Image(EVDK5_WIDTH, EVDK5_HEIGHT);
-//    image_t *dst = newUint8Image(15, 15);
     clearUint8Image_cm33(dst);
     //clearUint8Image(dst);
 
@@ -785,29 +752,6 @@ void exampleTemplate(void)
 //    				-1,  8, -1,
 //    				-1,  -1,  -1
 //            		};
-    int16_t* kernel = generateKernel();
-    int16_t maskData[16 * 16] = {
-        57, 89, 123, 34, 67, 98, 145, 75, 180, 134, 200, 76, 50, 112, 137, 102,
-        145, 65, 88, 172, 193, 47, 115, 160, 78, 140, 121, 175, 96, 86, 54, 130,
-        111, 64, 120, 80, 44, 153, 97, 67, 189, 173, 127, 138, 100, 145, 72, 95,
-        51, 112, 134, 167, 140, 76, 152, 59, 92, 185, 163, 139, 66, 81, 144, 60,
-        175, 88, 124, 180, 71, 159, 196, 94, 140, 101, 112, 136, 98, 57, 84, 157,
-        143, 91, 183, 132, 109, 155, 72, 68, 192, 124, 87, 106, 170, 63, 112, 137,
-        198, 59, 153, 100, 80, 144, 129, 85, 145, 123, 134, 95, 140, 74, 108, 169,
-        184, 97, 157, 91, 55, 73, 146, 166, 181, 120, 59, 173, 190, 65, 145, 88,
-        134, 112, 183, 141, 70, 152, 78, 175, 136, 110, 97, 140, 91, 129, 58, 164,
-        87, 76, 186, 120, 101, 143, 152, 74, 145, 170, 84, 108, 126, 195, 99, 83,
-        157, 140, 92, 190, 68, 56, 136, 174, 62, 124, 145, 183, 70, 10, 140, 108,
-        179, 165, 86, 153, 98, 110, 145, 137, 80, 154, 96, 68, 190, 129, 141, 73,
-        160, 84, 112, 109, 164, 176, 143, 191, 89, 135, 62, 180, 151, 122, 85, 98,
-        77, 140, 121, 183, 94, 162, 109, 58, 147, 100, 85, 133, 153, 200, 178, 145,
-        64, 135, 78, 152, 190, 96, 110, 143, 175, 105, 200, 89, 74, 195, 140, 157,
-        120, 98, 162, 145, 84, 180, 70, 136, 165, 112, 153, 140, 91, 128, 175, 66
-    };
-
-    mask->data = (uint8_t *)kernel;
-
-    free(kernel);
 
     if(dst == NULL)
     {
@@ -830,27 +774,32 @@ void exampleTemplate(void)
         // Image processing pipeline
         // ---------------------------------------------------------------------
         // Convert uyvy_pixel_t camera image to uint8_pixel_t image
-        convertToUint8(cam, src);
-//        convertUyvyToUint8_cm33(cam,src);
+//        convertToUint8(cam, src);
+        convertUyvyToUint8_cm33(cam,src);
 //        convertUyvyToInt16(cam,src);
 
 
         // Copy timestamp
-        ms1 = ms;
-//        threshold2Means(src, dst, 10);
-//        thresholdOtsu(src, dst, 10);
-//        scaleFast(src, dst);
 
+//        threshold2Means(src, dst, 10);
+//        thresholdOtsu(src, dst, BRIGHTNESS_DARK);
+//        scaleFast(dst, dst);
+        ms1 = ms;
+//        removeBorderBlobsIterative(dst, dst, CONNECTED_EIGHT);
+//        fillHolesTwoPass(dst, dst, CONNECTED_EIGHT, 128);
+        scaleFast(src, dst);
 //        clearUint8Image(dst);
 //        clearUint8Image_cm33(dst);
 //        convertUyvyToUint8_cm33(cam,dst);
-        scaleFast_cm33(src,dst);
+//
+//        clearUint8Image(src);
+//        src->data[0] = 100;
+//        src->data[1] = 200;
 
+//        scaleFast_cm33(src,dst);
 //        convolveFast(src, tmp, mask); //8 ms, realse is 5.2 ms
 //        meanFast(src, dst); //7 ms, release is 3.3ms
-
 //        sobelFast(src, tmp);
-
         ms2 = ms;
         // Copy timestamp
 
@@ -877,8 +826,25 @@ void exampleFinalAssignment(void)
     // -------------------------------------------------------------------------
     // Local image memory allocation
     // -------------------------------------------------------------------------
+    image_t *src = newUint8Image(EVDK5_WIDTH, EVDK5_HEIGHT);
+    image_t *dst = newUint8Image(EVDK5_WIDTH, EVDK5_HEIGHT);
 
-    // \todo Implement setup for the final assignment
+    const uint32_t zoom_factor = 4;
+
+    image_t *tmp = newUint8Image(EVDK5_WIDTH/zoom_factor, EVDK5_HEIGHT/zoom_factor);
+    image_t *thr = newUint8Image(EVDK5_WIDTH/zoom_factor, EVDK5_HEIGHT/zoom_factor);
+    image_t *thr_scaled = newUint8Image(EVDK5_WIDTH/zoom_factor, EVDK5_HEIGHT/zoom_factor);
+    image_t *lbl = newUint8Image(EVDK5_WIDTH/zoom_factor, EVDK5_HEIGHT/zoom_factor);
+
+    textSetFlipCharacters(1);
+
+
+    if(dst == NULL)
+        {
+            PRINTF("Could not allocate image memory\r\n");
+            while(1)
+            {}
+        }
 
     while(1U)
     {
@@ -894,9 +860,45 @@ void exampleFinalAssignment(void)
 
         // Copy timestamp
         ms1 = ms;
+        convertUyvyToUint8_cm33(cam,src);
+        zoomFactor(src, tmp, 0, 0, src->cols, src->rows, ZOOM_OUT, zoom_factor);
+        thresholdOtsu(tmp, thr, BRIGHTNESS_DARK);
+        removeBorderBlobsTwoPass(thr, thr, CONNECTED_EIGHT, 128);
 
-        // \todo Implement the image processing pipeline for the final
-        //       assignment
+        int32_t blobs = labelTwoPass(thr, lbl, CONNECTED_EIGHT, 128);
+        float value_check = 0.0f;
+        scaleFast(src, dst);
+
+        for(uint32_t blob=1; blob <= blobs; ++blob)
+        {
+        	blobinfo_t blobinfo;
+        				centroid(lbl, &blobinfo, blob);
+        				if(blobinfo.area > 50)
+        				{
+        					textSetFlipCharacters(1);
+        					perimeter(lbl, &blobinfo, blob);
+        					circularity(lbl, &blobinfo, blob);
+        					if(blobinfo.circularity > 1.05f){
+        						//circle
+        						textSetxy(blobinfo.centroid.x * 2, blobinfo.centroid.y * 2);
+        						textPutstring(dst, "Circle");
+        					}
+        					else if(blobinfo.circularity > 0.85f){
+        						textSetxy(blobinfo.centroid.x * 2, blobinfo.centroid.y * 2);
+        						textPutstring(dst, "Rectangle");
+        					}
+        					else if(blobinfo.circularity > 0.65f){
+        						textSetxy(blobinfo.centroid.x * 2, blobinfo.centroid.y * 2);
+        						textPutstring(dst, "Triangle");
+        					}
+        					else{
+        						textSetxy(blobinfo.centroid.x * 2, blobinfo.centroid.y * 2);
+        						textPutstring(dst, "Unknown");
+        					}
+        				}
+        }
+
+        convertToBgr888(dst, usb);
 
         // Copy timestamp
         ms2 = ms;

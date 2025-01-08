@@ -60,7 +60,7 @@ int main(void)
     // -------------------------------------------------------------------------
     // Try to open the EVDK5 uvc video capture device
     // -------------------------------------------------------------------------
-    cv::VideoCapture cap(1);
+    cv::VideoCapture cap(0);
 
     if (!cap.isOpened())
     {

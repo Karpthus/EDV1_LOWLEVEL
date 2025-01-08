@@ -42,6 +42,7 @@
 #include "image_fundamentals.h"
 #include "mensuration.h"
 #include "morphological_filters.h"
+#include "operators.h"
 
 #include <math.h>
 #include <string.h>
@@ -422,21 +423,115 @@ uint32_t labelIterative(const image_t *src, image_t *dst, const eConnected conne
  * \todo Implement this function
  */
 uint32_t labelTwoPass(const image_t *src, image_t *dst,
-                      const eConnected connected, const uint32_t lutSize)
-{
-    // ********************************************
-    // Remove this block when implementation starts
-    #warning TODO: labelTwoPass
+                      const eConnected connected, const uint32_t lutSize) {
+    uint32_t width = src->cols, height = src->rows;
+    uint32_t pixels = width * height;
+    // Allocate and initialize LUT
+    uint32_t *lut = (uint32_t *)malloc(lutSize * sizeof(uint32_t));
+    if (!lut) {
+        return 0; // Memory allocation failed
+    }
+    memset(lut, 0, lutSize * sizeof(uint32_t));
+    uint32_t nextLabel = 1; // Start labeling from 1
 
-    // Added to prevent compiler warnings
+    // First Pass: Assign initial labels and record equivalences
+    for (uint32_t y = 1; y < height - 1; y++) { // Skip border pixels
+        for (uint32_t x = 1; x < width - 1; x++) {
+            if (src->data[y * width + x] == 1) { // Foreground pixel
+                uint32_t neighbors[4] = {0};
+                if(connected == CONNECTED_FOUR){
+                    neighbors[0] = dst->data[(y - 1) * width + x];     // Top
+                    neighbors[1] = dst->data[y * width + (x - 1)];     // Left
+                }
+                else {
+                    neighbors[0] = dst->data[(y - 1) * width + x];     // Top
+                    neighbors[1] = dst->data[y * width + (x - 1)];     // Left
+                    neighbors[2] = dst->data[(y - 1) * width + (x - 1)]; // Top-left
+                    neighbors[3] = dst->data[(y - 1) * width + (x + 1)]; // Top-right
+                }
 
-    (void)src;
-    (void)dst;
-    (void)connected;
-    (void)lutSize;
+                uint32_t minLabel = UINT32_MAX;
+                for (uint32_t i = 0; i < (connected == CONNECTED_FOUR ? 2 : 4); i++) {
+                    if (neighbors[i] > 0) {
+                        // Find root label for this neighbor
+                        uint32_t root = neighbors[i];
+                        while (lut[root] != 0 && lut[root] != root) {
+                            root = lut[root];
+                        }
+                        if (root < minLabel) {
+                            minLabel = root;
+                        }
+                    }
+                }
 
-    return 0;
-    // ********************************************
+                if (minLabel == UINT32_MAX) {
+                    dst->data[y * width + x] = nextLabel;
+                    lut[nextLabel] = nextLabel; // New label points to itself
+                    nextLabel++;
+                } else {
+                    dst->data[y * width + x] = minLabel;
+                    // Update equivalences for all neighbors
+                    for (uint32_t i = 0; i < (connected == CONNECTED_FOUR ? 2 : 4); i++) {
+                        if (neighbors[i] > 0) {
+                            uint32_t root = neighbors[i];
+                            while (lut[root] != 0 && lut[root] != root) {
+                                root = lut[root];
+                            }
+                            if (root != minLabel) {
+                                lut[root] = minLabel;
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                dst->data[y * width + x] = 0;
+            }
+        }
+    }
+
+    // Flatten the LUT and remap labels to be consecutive
+    uint32_t *newLabels = (uint32_t *)calloc(nextLabel, sizeof(uint32_t));
+    if (!newLabels) {
+        free(lut);
+        return 0; // Memory allocation failed
+    }
+    uint32_t currentLabel = 1;
+
+    // First flatten
+    for (uint32_t i = 1; i < nextLabel; i++) {
+        uint32_t root = i;
+        while (lut[root] != 0 && lut[root] != root) {
+            root = lut[root];
+        }
+        lut[i] = root;
+    }
+
+    // Create consecutive mapping and count unique labels
+    uint32_t uniqueLabels = 0;
+    for (uint32_t i = 1; i < nextLabel; i++) {
+        if (lut[i] != 0) {
+            if (newLabels[lut[i]] == 0) {
+                newLabels[lut[i]] = currentLabel++;
+                uniqueLabels++;
+            }
+            lut[i] = newLabels[lut[i]];
+        }
+    }
+
+    // Second Pass: Relabel image using flattened LUT
+    for (uint32_t i = 0; i < pixels; i++) {
+        if (dst->data[i] > 0) {
+            dst->data[i] = lut[dst->data[i]];
+        }
+    }
+
+    // Cleanup
+    free(lut);
+    free(newLabels);
+
+    // Return number of unique labels (or 0 if none found)
+    return uniqueLabels > 0 ? uniqueLabels : 0;
 }
 
 /*!
@@ -465,7 +560,7 @@ void circularity(const image_t *img, blobinfo_t *blobinfo, const uint32_t blobnr
     }
 
     blobinfo->circularity = 4 * 3.14159f *
-        (blobinfo->area / (blobinfo->perimeter * blobinfo->perimeter));
+                            (blobinfo->area / (blobinfo->perimeter * blobinfo->perimeter));
 }
 
 /*!
@@ -641,19 +736,59 @@ float ncm(const image_t *img, const uint8_t blobnr, const int32_t p, const int32
  */
 void perimeter(const image_t *img, blobinfo_t *blobinfo, const uint32_t blobnr)
 {
-    // ********************************************
-    // Remove this block when implementation starts
-    #warning TODO: perimeter
+    image_t *eroded = newUint8Image(img->cols, img->rows);
+    image_t *thr = newUint8Image(img->cols, img->rows);
 
-    // Added to prevent compiler warnings
+    uint8_pixel_t msk[3 * 3] =
+        {
+            0, 1, 0,
+            1, 1, 1,
+            0, 1, 0,
+        };
 
-    (void)img;
-    (void)blobinfo;
-    (void)blobnr;
+    threshold(img, thr, blobnr, blobnr);
+    erosion(thr, eroded, msk, 3);
 
-    return;
-    // ********************************************
+    //Outline to make
+    float perimeter = 0.0f; /**< Variable to accumulate the perimeter value. */
+
+    // Iterate over all pixels of the image, excluding the borders
+    for (int32_t row = 1; row < img->rows - 1; row++) {
+        for (int32_t col = 1; col < img->cols - 1; col++) {
+            // Check if this pixel belongs to the specified blob number
+            if ((img->data[row * img->cols + col] == blobnr)&&(eroded->data[row * eroded->cols + col] == 0)) {
+                int32_t pixel_value = 1; // Start with 1 for the center pixel
+
+                // Check the 4 orthogonal neighbors (top, bottom, left, right)
+                pixel_value += (img->data[(row - 1) * img->cols + col] == blobnr) && (eroded->data[(row - 1) * eroded->cols + col] == 0) ? 2 : 0; // top
+                pixel_value += (img->data[(row + 1) * img->cols + col] == blobnr) && (eroded->data[(row + 1) * eroded->cols + col] == 0) ? 2 : 0; // bottom
+                pixel_value += (img->data[row * img->cols + (col - 1)] == blobnr) && (eroded->data[row * eroded->cols + (col - 1)] == 0) ? 2 : 0; // left
+                pixel_value += (img->data[row * img->cols + (col + 1)] == blobnr) && (eroded->data[row * eroded->cols + (col + 1)] == 0) ? 2 : 0; // right
+
+                // Check the 4 diagonal neighbors (top-left, top-right, bottom-left, bottom-right)
+                pixel_value += (img->data[(row - 1) * img->cols + (col - 1)] == blobnr) && (eroded->data[(row - 1) * eroded->cols + (col - 1)] == 0) ? 10 : 0; // top left
+                pixel_value += (img->data[(row - 1) * img->cols + (col + 1)] == blobnr) && (eroded->data[(row - 1) * eroded->cols + (col + 1)] == 0) ? 10 : 0; // top right
+                pixel_value += (img->data[(row + 1) * img->cols + (col - 1)] == blobnr) && (eroded->data[(row + 1) * eroded->cols + (col - 1)] == 0) ? 10 : 0; // bottom left
+                pixel_value += (img->data[(row + 1) * img->cols + (col + 1)] == blobnr) && (eroded->data[(row + 1) * eroded->cols + (col + 1)] == 0) ? 10 : 0; // bottom right
+
+                // Determine the perimeter contribution based on the sum of the neighboring pixels
+                if (pixel_value == 5 || pixel_value == 15 || pixel_value == 7 || pixel_value == 25|| pixel_value == 27|| pixel_value == 17) {
+                    perimeter += 1.0f; // Horizontal/vertical link
+                } else if (pixel_value == 21 || pixel_value == 33) {
+                    perimeter += 1.4142f; // Diagonal link
+                } else if (pixel_value == 13 || pixel_value == 23) {
+                    perimeter += 1.1180f;
+                }
+            }
+        }
+    }
+
+    // Store the result in blobinfo
+    blobinfo->perimeter = perimeter;
+    deleteUint8Image(eroded);
+    deleteUint8Image(thr);
 }
+
 
 /*!
  * \brief Counts the number of pixels in the \p c connected neighbourhood that

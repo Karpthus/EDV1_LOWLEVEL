@@ -1691,17 +1691,17 @@ void convolveFast(const image_t *src, image_t *dst, const image_t *msk)
             int32_t val = 0;
 
             // Unroll the 3x3 kernel
-            val += *(srcData + (y - 1) * srcCols + (x - 1)) * (mskData[0]);
-            val += *(srcData + (y - 1) * srcCols + (x)) * (mskData[3]);
-            val += *(srcData + (y - 1) * srcCols + (x + 1)) * (mskData[6]);
+            val += *(srcData + (y - 1) * srcCols + (x - 1)) * mskData[8]; // Bottom-right
+            val += *(srcData + (y - 1) * srcCols + (x))     * mskData[7]; // Bottom-center
+            val += *(srcData + (y - 1) * srcCols + (x + 1)) * mskData[6]; // Bottom-left
 
-            val += *(srcData + (y) * srcCols + (x - 1)) * (mskData[1]);
-            val += *(srcData + (y) * srcCols + (x)) * (mskData[4]);
-            val += *(srcData + (y) * srcCols + (x + 1)) * (mskData[7]);
+            val += *(srcData + (y) * srcCols + (x - 1))     * mskData[5]; // Middle-right
+            val += *(srcData + (y) * srcCols + (x))         * mskData[4]; // Center
+            val += *(srcData + (y) * srcCols + (x + 1))     * mskData[3]; // Middle-left
 
-            val += *(srcData + (y + 1) * srcCols + (x - 1)) * (mskData[2]);
-            val += *(srcData + (y + 1) * srcCols + (x)) * (mskData[5]);
-            val += *(srcData + (y + 1) * srcCols + (x + 1)) * (mskData[8]);
+            val += *(srcData + (y + 1) * srcCols + (x - 1)) * mskData[2]; // Top-right
+            val += *(srcData + (y + 1) * srcCols + (x))     * mskData[1]; // Top-center
+            val += *(srcData + (y + 1) * srcCols + (x + 1)) * mskData[0]; // Top-left
 
             // Store the result in the destination image
             *(dstData + (y * dst->cols) + x) = (int16_t)val;

@@ -26,6 +26,7 @@
 
         .syntax unified
         .cpu cortex-m33
+        .fpu fpv5-sp-d16
         .thumb
 
         .section .text.scaleFast_cm33
@@ -67,10 +68,19 @@ scaleFast_cm33:
 		MOV r5, #255
 
 loop_min_max:
+        // Register allocation:
+        // r0 Src pointer
+        // r1 Dst pointer
+        // r2 number of pixels
+        // r3 Scale factor
+
+        // r4 reserved for max
+        // r5 reserved for min
+
 		CMP r2, #0
 		BEQ scaleFactor
 
-		LDMIA r0!, {r6}
+		LDMIA r0!, {r6, r7, r8, r9}
 
 		//0xFF = 00000000 00000000 00000000 11111111
 		AND r10, r6, #0xFF  // Loading the first pixel with 0xFF
@@ -108,52 +118,229 @@ loop_min_max:
 		IT LS
 		MOVLS r5, r10		// Update min when lower
 
+		AND r10, r7, #0xFF  // Loading the first pixel with 0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
 
-		SUBS r2, r2, #4    // Decrement pixel counter by 4
+		LSR r7, r7, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r7, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		LSR r7, r7, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r7, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		LSR r7, r7, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r7, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		AND r10, r8, #0xFF  // Loading the first pixel with 0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		LSR r8, r8, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r8, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		LSR r8, r8, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r8, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		LSR r8, r8, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r8, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		AND r10, r9, #0xFF  // Loading the first pixel with 0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		LSR r9, r9, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r9, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		LSR r9, r9, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r9, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		LSR r9, r9, #8      // Shift r6 right by 8 bits to find the second
+		AND r10, r9, #0xFF
+		CMP r10, r4
+		IT HI
+		MOVHI r4, r10 		// Update max when higher
+		CMP r10, r5
+		IT LS
+		MOVLS r5, r10		// Update min when lower
+
+		SUBS r2, r2, #16    // Decrement pixel counter by 4
     	B loop_min_max    // Repeat if more pixels remain
 
 scaleFactor:
+		//S0 is 255, This is a fixed value for the scaling formula
 		MOV r6, #255
+		LSL r6, r6, #16
 		SUBS r3, r4, r5
-		LSLS r3, r3, #16
-		UDIV r3, r6, r3
-
+		UDIV  r3, r6, r3
 		POP {r11}
-		SUBS r0, r0, r11
-		MOV r2 , r11
+		MOV r2, r11
+		SUBS r0, r0, r2
+
 
 		B applyScale
 
 applyScale:
-		LDMIA r0!, {r6}
+		//r6, r7, r8, r4, r9 ,r11
+		LDMIA r0!, {r6, r7, r8}
 
 		AND r10, r6, #0xFF
 		SUBS r10, r10, r5
-		MUL r8, r10 , r3
-		LSRS r7, r7, #16
-		BFI r7, r10, #0, #8
+		MUL r10, r10 , r3
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r4, r10, #0, #8
 
 		LSR r6, r6, #8
 		AND r10, r6, #0xFF
 		SUBS r10, r10, r5
 		MUL r10, r10 , r3
-		BFI r7, r10, #8, #8
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r4, r10, #8, #8
 
 		LSR r6, r6, #8
 		AND r10, r6, #0xFF
 		SUBS r10, r10, r5
 		MUL r10, r10 , r3
-		BFI r7, r10, #16, #8
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r4, r10, #16, #8
 
 		LSR r6, r6, #8
 		AND r10, r6, #0xFF
 		SUBS r10, r10, r5
 		MUL r10, r10 , r3
-		BFI r7, r10, #24, #8
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r4, r10, #24, #8
 
-		STMIA r1!, {r7}
+		//Second Register
+		AND r10, r7, #0xFF
+		SUBS r10, r10, r5
+		MUL r10, r10 , r3
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r9, r10, #0, #8
 
-		SUBS r2, r2, #4
+		LSR r7, r7, #8
+		AND r10, r7, #0xFF
+		SUBS r10, r10, r5
+		MUL r10, r10 , r3
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r9, r10, #8, #8
+
+		LSR r7, r7, #8
+		AND r10, r7, #0xFF
+		SUBS r10, r10, r5
+		MUL r10, r10 , r3
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r9, r10, #16, #8
+
+		LSR r7, r7, #8
+		AND r10, r7, #0xFF
+		SUBS r10, r10, r5
+		MUL r10, r10 , r3
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r9, r10, #24, #8
+
+		//third register
+		AND r10, r8, #0xFF
+		SUBS r10, r10, r5
+		MUL r10, r10 , r3
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r11, r10, #0, #8
+
+		LSR r8, r8, #8
+		AND r10, r8, #0xFF
+		SUBS r10, r10, r5
+		MUL r10, r10 , r3
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r11, r10, #8, #8
+
+		LSR r8, r8, #8
+		AND r10, r8, #0xFF
+		SUBS r10, r10, r5
+		MUL r10, r10 , r3
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r11, r10, #16, #8
+
+		LSR r8, r8, #8
+		AND r10, r8, #0xFF
+		SUBS r10, r10, r5
+		MUL r10, r10 , r3
+		ADD r10, r10, #32768
+		LSR r10, r10, #16
+		BFI r11, r10, #24, #8
+
+		STMIA r1!, {r4, r9 ,r11}
+
+		SUBS r2, r2, #12
 		CMP r2, #0
 		BNE applyScale
 

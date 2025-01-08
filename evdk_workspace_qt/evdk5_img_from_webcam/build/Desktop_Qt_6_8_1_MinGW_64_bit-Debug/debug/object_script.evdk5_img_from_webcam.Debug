@@ -1,0 +1,14 @@
+debug/coding_and_compression.o
+debug/fonts.o
+debug/graphics_algorithms.o
+debug/histogram_operations.o
+debug/image_fundamentals.o
+debug/mensuration.o
+debug/morphological_filters.o
+debug/noise.o
+debug/nonlinear_filters.o
+debug/segmentation.o
+debug/spatial_filters.o
+debug/spatial_frequency_filters.o
+debug/transforms.o
+debug/main.o

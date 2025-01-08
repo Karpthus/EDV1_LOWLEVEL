@@ -61,7 +61,7 @@ int main(void)
     // -------------------------------------------------------------------------
     // Try to open the EVDK5 uvc video capture device
     // -------------------------------------------------------------------------
-    cv::VideoCapture cap(0);
+    cv::VideoCapture cap(1);
 
     if (!cap.isOpened())
     {
@@ -97,10 +97,10 @@ int main(void)
     cv::Mat cv_hst_dst(HIST_HEIGHT, 256, CV_8UC1, hst_dst->data);
 
     cv::namedWindow("cam", cv::WINDOW_NORMAL | cv::WINDOW_FREERATIO);
-    cv::namedWindow("src", cv::WINDOW_NORMAL | cv::WINDOW_FREERATIO);
-    cv::namedWindow("dst", cv::WINDOW_NORMAL | cv::WINDOW_FREERATIO);
+    // cv::namedWindow("src", cv::WINDOW_NORMAL | cv::WINDOW_FREERATIO);
+    // cv::namedWindow("dst", cv::WINDOW_NORMAL | cv::WINDOW_FREERATIO);
     cv::namedWindow("hst_src", cv::WINDOW_NORMAL | cv::WINDOW_FREERATIO);
-    cv::namedWindow("hst_dst", cv::WINDOW_NORMAL | cv::WINDOW_FREERATIO);
+    // cv::namedWindow("hst_dst", cv::WINDOW_NORMAL | cv::WINDOW_FREERATIO);
 
     // -------------------------------------------------------------------------
     // Neatly layout the windows
@@ -148,17 +148,17 @@ int main(void)
 
         // Draw histograms
         drawHistogram(src, hst_src);
-        drawHistogram(dst, hst_dst);
+        // drawHistogram(dst, hst_dst);
 
 
         // ---------------------------------------------------------------------
         // Show images
         // ---------------------------------------------------------------------
         cv::imshow("cam", cv_cam);
-        cv::imshow("src", cv_src);
-        cv::imshow("dst", cv_dst);
+        // cv::imshow("src", cv_src);
+        // cv::imshow("dst", cv_dst);
         cv::imshow("hst_src", cv_hst_src);
-        cv::imshow("hst_dst", cv_hst_dst);
+        // cv::imshow("hst_dst", cv_hst_dst);
 
         // ---------------------------------------------------------------------
         // Break from the main loop if a key is pressed

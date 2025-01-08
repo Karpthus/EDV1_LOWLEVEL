@@ -63,6 +63,7 @@ void textSetfont(const char *f);
 void textSetUint8Colors(const uint8_pixel_t background, const uint8_pixel_t foreground);
 void textSetBgr888Colors(const bgr888_pixel_t background, const bgr888_pixel_t foreground);
 void textSetxy(const int32_t x, const int32_t y);
+void textSetFlipCharacters(const uint32_t flip);
 void textPutchar(image_t *img, const char c);
 void textPutstring(image_t *img, const char *str);
 void drawLineUint8(image_t *img, point_t p1, point_t p2, uint8_pixel_t val);

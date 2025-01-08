@@ -1,0 +1,14 @@
+release/coding_and_compression.o
+release/fonts.o
+release/graphics_algorithms.o
+release/histogram_operations.o
+release/image_fundamentals.o
+release/mensuration.o
+release/morphological_filters.o
+release/noise.o
+release/nonlinear_filters.o
+release/segmentation.o
+release/spatial_filters.o
+release/spatial_frequency_filters.o
+release/transforms.o
+release/main.o

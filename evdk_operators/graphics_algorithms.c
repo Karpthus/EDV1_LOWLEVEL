@@ -83,6 +83,11 @@ static uint8_pixel_t local_uint8_foreground = 0;
 static bgr888_pixel_t local_bgr888_foreground = (bgr888_pixel_t){0x00,0x00,0x00};
 
 /*!
+ * \brief Local variable indicating if characters should be drawn flipped
+ */
+static uint32_t local_flip_characters = 0;
+
+/*!
  * \brief Sets the font
  *
  * Set the font
@@ -132,6 +137,21 @@ void textSetxy(const int32_t x, const int32_t y)
 {
     local_x = x;
     local_y = y;
+}
+
+/*!
+ * \brief Flips the text in the y-axis
+ *
+ * The windows driver flips all images around the y-axis. This function provides
+ * the option to flip each character when it is drawn, so when it is flipped by
+ * windows, it is visualized properly.
+ *
+ * \param[in]  flipped  0 characters should NOT be flipped in the y-axis (default)
+ *                      1 characters should be flipped in the y-axis
+ */
+void textSetFlipCharacters(const uint32_t flipped)
+{
+    local_flip_characters = flipped;
 }
 
 /*!
@@ -229,12 +249,25 @@ void textPutchar(image_t *img, const char c)
                 {}
             }
 
-            y_tmp++;
-
-            // Stop if the y value is outside screen boundaries
-            if(y_tmp >= img->rows)
+            if(local_flip_characters == 0)
             {
-                break;
+                y_tmp++;
+
+                // Stop if the y value is outside screen boundaries
+                if(y_tmp >= img->rows)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                y_tmp--;
+
+                // Stop if the y value is outside screen boundaries
+                if(y_tmp < 0)
+                {
+                    break;
+                }
             }
 
             // Stop if the font height has been reached

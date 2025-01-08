@@ -82,14 +82,14 @@ void dilation(const image_t *src, image_t *dst, const uint8_t *mask, const uint8
                 for(int32_t i=-n/2; i<=n/2; i++)
                 {
                     if((x+i) >= 0 &&
-                       (y+j) >= 0 &&
-                       (x+i) <  src->cols &&
-                       (y+j) <  src->rows)
+                        (y+j) >= 0 &&
+                        (x+i) <  src->cols &&
+                        (y+j) <  src->rows)
                     {
                         // Is the pixel set and is the corresponding
                         // cell in the mask set?
                         if((getUint8Pixel(src,x+i,y+j) == 1) &&
-                           (mask[((j+(n/2))*n) + (i+(n/2))] == 1))
+                            (mask[((j+(n/2))*n) + (i+(n/2))] == 1))
                         {
                             // Mark this cell for dilation
                             smax = 1;
@@ -147,9 +147,9 @@ void dilationGray(const image_t *src, image_t *dst, const uint8_t *mask, const u
                 for(int32_t i=-n/2; i<=n/2; i++)
                 {
                     if((x+i) >= 0 &&
-                       (y+j) >= 0 &&
-                       (x+i) <  src->cols &&
-                       (y+j) <  src->rows)
+                        (y+j) >= 0 &&
+                        (x+i) <  src->cols &&
+                        (y+j) <  src->rows)
                     {
                         int32_t val = getUint8Pixel(src,x+i,y+j) + mask[((j+(n/2))*n) + (i+(n/2))];
 
@@ -214,14 +214,14 @@ void erosion(const image_t *src, image_t *dst, const uint8_t *mask, const uint8_
                 for(int32_t i=-n/2; i<=n/2; i++)
                 {
                     if((x+i) >= 0 &&
-                       (y+j) >= 0 &&
-                       (x+i) <  src->cols &&
-                       (y+j) <  src->rows)
+                        (y+j) >= 0 &&
+                        (x+i) <  src->cols &&
+                        (y+j) <  src->rows)
                     {
                         // Is the pixel background and is the corresponding
                         // cell in the mask set?
                         if((getUint8Pixel(src,x+i,y+j) == 0) &&
-                           (mask[((j+(n/2))*n) + (i+(n/2))] == 1))
+                            (mask[((j+(n/2))*n) + (i+(n/2))] == 1))
                         {
                             // Mark this cell for erosion
                             smin = 0;
@@ -279,9 +279,9 @@ void erosionGray(const image_t *src, image_t *dst, const uint8_t *mask, const ui
                 for(int32_t i=-n/2; i<=n/2; i++)
                 {
                     if((x+i) >= 0 &&
-                       (y+j) >= 0 &&
-                       (x+i) <  src->cols &&
-                       (y+j) <  src->rows)
+                        (y+j) >= 0 &&
+                        (x+i) <  src->cols &&
+                        (y+j) <  src->rows)
                     {
                         int32_t val = getUint8Pixel(src,x+i,y+j) - mask[((j+(n/2))*n) + (i+(n/2))];
 
@@ -467,20 +467,135 @@ void fillHolesIterative(const image_t *src, image_t *dst, const eConnected c)
 uint32_t fillHolesTwoPass(const image_t *src, image_t *dst,
                           const eConnected connected, const uint32_t lutSize)
 {
-    // ********************************************
-    // Remove this block when implementation starts
-    #warning TODO: fillHolesTwoPass
+    uint32_t width = src->cols, height = src->rows; // Image dimensions
+    uint32_t pixels = width * height; // Total number of pixels in the image
 
-    // Added to prevent compiler warnings
-    (void)src;
-    (void)dst;
-    (void)connected;
-    (void)lutSize;
+    // Allocate memory for the Look-Up Table (LUT)
+    uint32_t *lut = (uint32_t *)malloc(lutSize * sizeof(uint32_t));
+    if (!lut) {
+        return 0; // Return 0 if memory allocation fails
+    }
 
-    return 0;
-    // ********************************************
+    memset(lut, 0, lutSize * sizeof(uint32_t));
+    lut[1] = 1; // Initialize the first label
+
+    // Special initialization for the border label (label 2)
+    lut[2] = 2; // Label 2 is reserved for the border region
+
+    uint32_t nextLabel = 3; // Start assigning new labels from 3
+
+    // Copy input image to output image (dst)
+    for (uint32_t i = 0; i < pixels; i++) {
+        dst->data[i] = src->data[i];
+    }
+
+    // Mark border pixels as background (label 2)
+    // Top and bottom rows
+    for (uint32_t i = 0; i < width; i++) {
+        if (src->data[i] == 0){
+            dst->data[i] = 2; // Top row
+            lut[2] = 2; // Label 2 is reserved for the border region
+        }
+        if (src->data[(height - 1) * width + i] == 0){
+            dst->data[(height - 1) * width + i] = 2; // Bottom row
+            lut[2] = 2; // Label 2 is reserved for the border region
+        }
+    }
+
+    // Left and right columns
+    for (uint32_t i = 0; i < height; i++) {
+        if (src->data[i * width] == 0){
+            dst->data[i * width] = 2; // Left column
+            lut[2] = 2;
+        }
+        if (src->data[i * width + width - 1] == 0){
+            dst->data[i * width + width - 1] = 2;
+            lut[2] = 2;
+        }
+    }
+
+    if(lut[2] != 2){
+        for (uint32_t i = 0; i < pixels; i++) {
+            dst->data[i] = 1;
+        }
+        free(lut);
+        return 1;
+    }
+
+    // First Pass: Labeling connected components
+    for (uint32_t y = 1; y < height - 1; y++) { // Skip border pixels
+        for (uint32_t x = 1; x < width - 1; x++) {
+            uint32_t idx = y * width + x; // Current pixel index
+
+            if (dst->data[idx] == 0) { // Process only background pixels (0)
+                uint32_t labels[8] = {0}; // Array to hold neighboring labels
+
+                // Get neighboring labels based on connectivity
+                if (connected == CONNECTED_FOUR) {
+                    // 4-connected neighbors: top, left, bottom, and right
+                    labels[0] = dst->data[(y - 1) * width + x];     // Top
+                    labels[1] = dst->data[y * width + (x - 1)];     // Left
+                    labels[2] = dst->data[(y + 1) * width + x];     // Bottom
+                    labels[3] = dst->data[y * width + (x + 1)];     // Right
+                } else {
+                    // 8-connected neighbors: all 8 surrounding pixels
+                    labels[0] = dst->data[(y - 1) * width + x];     // Top
+                    labels[1] = dst->data[y * width + (x - 1)];     // Left
+                    labels[2] = dst->data[(y - 1) * width + (x - 1)]; // Top-left
+                    labels[3] = dst->data[(y - 1) * width + (x + 1)]; // Top-right
+                    labels[4] = dst->data[(y + 1) * width + x];     // Bottom
+                    labels[5] = dst->data[y * width + (x + 1)];     // Right
+                    labels[6] = dst->data[(y + 1) * width + (x - 1)]; // Bottom-left
+                    labels[7] = dst->data[(y + 1) * width + (x + 1)]; // Bottom-right
+                }
+
+                // Find the smallest valid label among the neighbors
+                uint32_t minLabel = 255; // Initialize to a large value
+                for (uint32_t i = 0; i < connected; i++) {
+                    uint32_t neighborLabel = labels[i];
+                    // Update minimum label if valid (>= 2)
+                    if (neighborLabel >= 2 && neighborLabel < minLabel) {
+                        minLabel = neighborLabel;
+                    }
+                }
+
+                if (minLabel != 255) {
+                    // Assign smallest neighbor label to current pixel
+                    dst->data[idx] = minLabel;
+
+                    // Update LUT equivalences for all valid neighbors
+                    for (uint32_t i = 0; i < connected; i++) {
+                        uint32_t neighborLabel = labels[i];
+                        if (neighborLabel >= 2) {
+
+                            lut[neighborLabel] = minLabel; // Merge labels
+                        }
+                    }
+                } else {
+                    // Assign a new label for an isolated region
+                    dst->data[idx] = nextLabel;
+                    lut[nextLabel] = nextLabel; // Initialize new label in LUT
+                    nextLabel++;
+                }
+            }
+        }
+    }
+
+    // Second Pass: Update labels to final values
+    for (uint32_t i = 0; i < pixels; i++) {
+        // Resolve each pixel's label to its root in the LUT
+        if (lut[dst->data[i]] == 2) {
+            dst->data[i] = 0; // Connected to the background
+        }
+        else {
+            dst->data[i] = 1; // Part of a foreground region
+        }
+    }
+
+    // Free allocated memory for the LUT
+    free(lut);
+    return 1; // Success
 }
-
 /*!
  * \brief This function is used to find geometrical features
  *
@@ -504,14 +619,14 @@ void hitmiss(const image_t *src, image_t *dst, const uint8_t *m1, const uint8_t 
 
     // Verifiy mask validity
     ASSERT((m1[0] & m2[0]) == 1 ||
-           (m1[1] & m2[1]) == 1 ||
-           (m1[2] & m2[2]) == 1 ||
-           (m1[3] & m2[3]) == 1 ||
-           (m1[4] & m2[4]) == 1 ||
-           (m1[5] & m2[5]) == 1 ||
-           (m1[6] & m2[6]) == 1 ||
-           (m1[7] & m2[7]) == 1 ||
-           (m1[8] & m2[8]) == 1,
+               (m1[1] & m2[1]) == 1 ||
+               (m1[2] & m2[2]) == 1 ||
+               (m1[3] & m2[3]) == 1 ||
+               (m1[4] & m2[4]) == 1 ||
+               (m1[5] & m2[5]) == 1 ||
+               (m1[6] & m2[6]) == 1 ||
+               (m1[7] & m2[7]) == 1 ||
+               (m1[8] & m2[8]) == 1,
            " m1 AND m2 must be 0");
 
     // Verify image consistency
@@ -704,6 +819,8 @@ void removeBorderBlobsIterative(const image_t *src, image_t *dst, const eConnect
  *                     dynamically allocate memory for the lookup table. A
  *                     lower value is faster, but is also able to find fewer
  *                     labels. The value is application dependent.
+ *  CONNECTED_FOUR  = 4, ///< 4-connected neighbourhood
+    CONNECTED_EIGHT = 8, ///< 8-connected neighbourhood
  *
  * \return 0 Failure
  *           \li Memory allocation failed
@@ -716,20 +833,135 @@ uint32_t removeBorderBlobsTwoPass(const image_t *src, image_t *dst,
                                   const eConnected connected,
                                   const uint32_t lutSize)
 {
-    // ********************************************
-    // Remove this block when implementation starts
-    #warning TODO: removeBorderBlobsTwoPass
+    uint32_t width = src->cols, height = src->rows;
+    uint32_t pixles = width * height;
 
-    // Added to prevent compiler warnings
-    (void)src;
-    (void)dst;
-    (void)connected;
-    (void)lutSize;
+    uint32_t *lut = (uint32_t *)malloc(lutSize * sizeof(uint32_t));
+    if (!lut) {
+        return 0;
+    }
+    memset(lut, 0, lutSize * sizeof(uint32_t));
+    lut[1] = 1; // Initialize the first label
 
-    return 0;
-    // ********************************************
+    uint32_t nextLabel = 3;
+    // Initialize border pixels as labeled (2)
+    for (uint32_t i = 0; i < width; i++) {
+        uint32_t index = (height - 1) * width + i;
+        if (src->data[i] == 1) {
+            dst->data[i] = 2;
+            lut[2] = 2;  // Mark border as part of a connected component
+        }
+        if (src->data[index] == 1) {
+            dst->data[index] = 2;
+            lut[2] = 2;
+        }
+    }
+
+    for (uint32_t i = 0; i < height; i++) {
+        uint32_t index = i * width;
+        if (src->data[index] == 1) {
+            dst->data[index] = 2;
+            lut[2] = 2;
+        }
+        if (src->data[index + width - 1] == 1) {
+            dst->data[index + width - 1] = 2;
+            lut[2] = 2;
+        }
+    }
+
+    if (lut[2] != 2) {
+        free(lut);
+        return 1; // No border pixels found
+    }
+
+    // First Pass: Label connected pixels in dst
+    for (uint32_t y = 1; y < height - 1; y++) { // Skip top and bottom border
+        for (uint32_t x = 1; x < width - 1; x++) { // Skip left and right border
+            if (src->data[y * width + x] == 1) { // Unmarked object pixel
+                uint32_t minLabel = 0; // Smallest neighbor label
+                uint32_t labels[8] = {0}; // Store neighbor labels
+
+                // Check neighbors based on connectivity
+                if (connected == CONNECTED_FOUR) {
+                    // 4-connected: top, left, bottom, right
+                    labels[0] = dst->data[(y - 1) * width + x];
+                    labels[1] = dst->data[y * width + (x - 1)];
+                    labels[2] = dst->data[(y + 1) * width + x];
+                    labels[3] = dst->data[y * width + (x + 1)];
+                } else {
+                    // 8-connected: check all 8 neighbors
+                    labels[0] = dst->data[(y - 1) * width + x]; // Top
+                    labels[1] = dst->data[y * width + (x - 1)]; // Left
+                    labels[2] = dst->data[(y - 1) * width + (x - 1)]; // Top-left
+                    labels[3] = dst->data[(y - 1) * width + (x + 1)]; // Top-right
+                    labels[4] = dst->data[(y + 1) * width + x]; // Bottom
+                    labels[5] = dst->data[y * width + (x + 1)]; // Right
+                    labels[6] = dst->data[(y + 1) * width + (x - 1)]; // Bottom-left
+                    labels[7] = dst->data[(y + 1) * width + (x + 1)]; // Bottom-right
+                }
+
+                // Find the smallest label from neighbors
+                for (uint32_t i = 0; i < connected; i++) {
+                    if (labels[i] > 1 && (minLabel == 0 || labels[i] < minLabel)) {
+                        minLabel = labels[i];
+                    }
+                }
+
+                // If a neighbor label is found, propagate the smallest label
+                if (minLabel > 0) {
+                    dst->data[y * width + x] = minLabel;
+                    for (uint32_t i = 0; i < connected; i++) {
+                        if (labels[i] > 1) {
+                            // Union: Merge labels if they belong to the same connected component
+                            if (labels[i] != minLabel) {
+                                lut[labels[i]] = minLabel;
+                            }
+                        }
+                    }
+                }
+                else {
+                    // No neighbors labeled: assign a new label
+                    if(nextLabel > lutSize){
+                        free(lut);
+                        return 0;
+                    }
+                    dst->data[y * width + x] = nextLabel;
+                    lut[nextLabel] = nextLabel; // Initialize new label in LUT
+                    nextLabel++;
+                }
+                for (uint32_t i = 1; i < lutSize; i++) {
+                    uint32_t current = i;
+
+                    // If the value is not pointing to itself or 2, follow the chain
+                    while (lut[current] != current && lut[current] != 2) {
+                        current = lut[current];
+                    }
+                    if(lut[i] == 0){
+                        break;
+                    }
+
+                    // updating the value at the original index
+                    lut[i] = lut[current];
+                }
+            }
+        }
+    }
+
+    // Second Pass: Update dst based on LUT values
+    for (uint32_t i = 0; i < pixles; i++) { // Loop through all rows
+        uint8_t pixelLabel = dst->data[i]; // Get the label of the current pixel
+        // Check the LUT value for the pixel's label
+        if (lut[pixelLabel] < 3) {
+            dst->data[i] = 0; // Change pixels with label 2 in LUT to 0
+        } else {
+            dst->data[i] = 1; // All other pixels are set to 1
+        }
+
+    }
+    // Cleanup
+    free(lut);
+    return 1; // Success
 }
-
 /*!
  * \brief Defines a unique compressed geometrical representation of an object.
  *
